@@ -1,5 +1,7 @@
 <script type="module">
 
+document.addEventListener("DOMContentLoaded", () => {
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -23,15 +25,18 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 let visitedCountries = [];
 
+const loginBtn = document.getElementById("loginBtn");
+const globeContainer = document.getElementById("globeViz");
+
 // LOGIN
-document.getElementById("loginBtn").addEventListener("click", () => {
+loginBtn.addEventListener("click", () => {
   signInWithPopup(auth, provider);
 });
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
-    document.getElementById("loginBtn").style.display = "none";
+    loginBtn.style.display = "none";
 
     const docRef = doc(db, "users", user.uid);
     const docSnap = await getDoc(docRef);
@@ -47,11 +52,10 @@ onAuthStateChanged(auth, async (user) => {
 // GLOBO
 const Globe = window.Globe;
 const globe = Globe()
-  (document.getElementById("globeViz"))
+  (globeContainer)
   .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
   .backgroundColor("#0f172a");
 
-// Cargar países GeoJSON
 fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
   .then(res => res.json())
   .then(countries => {
@@ -91,5 +95,14 @@ function updateGlobe() {
   );
 }
 
+});
+
 </script>
 
+
+apiKey: "AIzaSyAW55OcrQaJy6iwidqi35Rn5JXEnKnEtbs",
+    authDomain: "beenthere-35029.firebaseapp.com",
+    projectId: "beenthere-35029",
+    storageBucket: "beenthere-35029.firebasestorage.app",
+    messagingSenderId: "424430201561",
+    appId: "1:424430201561:web:0877f54d297f2e1921acc8"
