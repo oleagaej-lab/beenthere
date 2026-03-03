@@ -38,6 +38,31 @@
         background: #2563eb;
         color: white;
       }
+
+      #stats {
+  width: 60%;
+  margin: 10px auto;
+}
+
+#progressText {
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+#progressBarContainer {
+  width: 100%;
+  height: 20px;
+  background: #1e293b;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#progressBar {
+  height: 100%;
+  width: 0%;
+  background: #2563eb;
+  transition: width 0.4s ease;
+}
     </style>
   </head>
 
@@ -75,6 +100,7 @@
 
       let currentUser = null;
       let visitedCountries = [];
+      let totalCountries = 0;
 
       const loginBtn = document.getElementById("loginBtn");
       const globeContainer = document.getElementById("globeViz");
@@ -97,9 +123,18 @@
           }
 
           updateGlobe();
+          updateProgress();
         }
       });
 
+<div id="stats">
+  <div id="progressText">🌍 0 countries visited (0%)</div>
+  <div id="progressBarContainer">
+    <div id="progressBar"></div>
+  </div>
+</div>
+
+      
       // GLOBO
       const Globe = window.Globe;
 
@@ -111,6 +146,8 @@
       fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
         .then(res => res.json())
         .then(countries => {
+          totalCountries = countries.features.length;
+updateProgress();
           globe
             .polygonsData(countries.features)
             .polygonAltitude(0.01)
@@ -144,6 +181,18 @@ await setDoc(doc(db, "users", currentUser.uid), {
 });
 
 updateGlobe();
+              function updateProgress() {
+  const count = visitedCountries.length;
+  const percent = totalCountries
+    ? Math.round((count / totalCountries) * 100)
+    : 0;
+
+  document.getElementById("progressText").innerText =
+    `🌍 ${count} countries visited (${percent}%)`;
+
+  document.getElementById("progressBar").style.width =
+    percent + "%";
+}
             });
         });
 
@@ -158,6 +207,7 @@ updateGlobe();
     </script>
   </body>
 </html>
+
 
 
 
