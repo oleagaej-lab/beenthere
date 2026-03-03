@@ -42,7 +42,7 @@
         padding: 10px;
         width: 60%;
         max-width: 400px;
-        margin: 10px auto;
+        margin: 10px auto 0 auto;
         display: block;
         border-radius: 8px;
         border: none;
@@ -60,6 +60,11 @@
         display: none;
         max-height: 200px;
         overflow-y: auto;
+      }
+
+      #suggestions div {
+        padding: 8px;
+        cursor: pointer;
       }
 
       #suggestions div:hover {
@@ -98,11 +103,9 @@
 
     <button id="loginBtn" class="primary">Login with Google</button>
 
-    <!-- Buscador -->
     <input type="text" id="citySearch" placeholder="Search city..." />
     <div id="suggestions"></div>
 
-    <!-- Barra progreso -->
     <div id="stats">
       <div id="progressText">🌍 0 countries visited (0%)</div>
       <div id="progressBarContainer">
@@ -173,13 +176,15 @@
       }
 
       function updateCities() {
+        globe.pointsData([]); // reset obligatorio
+
         globe
           .pointsData(visitedCities)
           .pointLat(d => d.lat)
           .pointLng(d => d.lng)
           .pointColor(() => "#f59e0b")
-          .pointAltitude(0.02)
-          .pointRadius(0.5);
+          .pointAltitude(0.03)
+          .pointRadius(0.6);
       }
 
       function updateProgress() {
@@ -199,11 +204,12 @@
         .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
         .backgroundColor("#0f172a");
 
+      globe.pointsData([]); // inicializar puntos
+
       fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
         .then(res => res.json())
         .then(countries => {
 
-          // 🇦🇷 Malvinas como Argentina
           countries.features.forEach(f => {
             if (f.properties.name === "Falkland Islands") {
               f.properties.name = "Argentina";
@@ -277,45 +283,51 @@
 
         matches.forEach(city => {
           const div = document.createElement("div");
-          div.style.padding = "8px";
-          div.style.cursor = "pointer";
           div.innerText = `${city.name} (${city.country})`;
 
-          div.addEventListener("click", async () => {
-            if (!currentUser) {
-              alert("Login first");
-              return;
-            }
-
-            if (!visitedCities.find(c => c.name === city.name)) {
-              visitedCities.push(city);
-            }
-
-            if (!visitedCountries.includes(city.country)) {
-              visitedCountries.push(city.country);
-            }
-
-            await setDoc(doc(db, "users", currentUser.uid), {
-              visited: visitedCountries,
-              visitedCities: visitedCities
-            });
-
-            updateGlobe();
-            updateCities();
-            updateProgress();
-
-            cityInput.value = "";
-            suggestionsDiv.style.display = "none";
-          });
+          div.addEventListener("click", () => selectCity(city));
 
           suggestionsDiv.appendChild(div);
         });
 
         suggestionsDiv.style.display = "block";
       });
+
+      cityInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const firstSuggestion = suggestionsDiv.querySelector("div");
+          if (firstSuggestion) {
+            firstSuggestion.click();
+          }
+        }
+      });
+
+      async function selectCity(city) {
+        if (!currentUser) {
+          alert("Login first");
+          return;
+        }
+
+        if (!visitedCities.find(c => c.name === city.name)) {
+          visitedCities.push(city);
+        }
+
+        if (!visitedCountries.includes(city.country)) {
+          visitedCountries.push(city.country);
+        }
+
+        await setDoc(doc(db, "users", currentUser.uid), {
+          visited: visitedCountries,
+          visitedCities: visitedCities
+        });
+
+        updateGlobe();
+        updateCities();
+        updateProgress();
+
+        cityInput.value = "";
+        suggestionsDiv.style.display = "none";
+      }
     </script>
   </body>
 </html>
-
-
-
