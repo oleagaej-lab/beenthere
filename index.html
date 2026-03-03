@@ -49,6 +49,23 @@
         font-size: 14px;
       }
 
+      #suggestions {
+        width: 60%;
+        max-width: 400px;
+        margin: 0 auto;
+        background: white;
+        color: black;
+        border-radius: 8px;
+        text-align: left;
+        display: none;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      #suggestions div:hover {
+        background: #e5e7eb;
+      }
+
       #stats {
         width: 60%;
         margin: 10px auto;
@@ -81,8 +98,9 @@
 
     <button id="loginBtn" class="primary">Login with Google</button>
 
-    <!-- Buscar ciudad -->
+    <!-- Buscador -->
     <input type="text" id="citySearch" placeholder="Search city..." />
+    <div id="suggestions"></div>
 
     <!-- Barra progreso -->
     <div id="stats">
@@ -120,6 +138,8 @@
 
       const loginBtn = document.getElementById("loginBtn");
       const globeContainer = document.getElementById("globeViz");
+      const cityInput = document.getElementById("citySearch");
+      const suggestionsDiv = document.getElementById("suggestions");
 
       loginBtn.addEventListener("click", () => {
         signInWithPopup(auth, provider);
@@ -217,7 +237,7 @@
                 visitedCountries.push(countryName);
               }
 
-              await setDoc(doc(db, currentUser.uid), {
+              await setDoc(doc(db, "users", currentUser.uid), {
                 visited: visitedCountries,
                 visitedCities: visitedCities
               });
@@ -227,7 +247,6 @@
             });
         });
 
-      // Dataset simple de ciudades
       const cities = [
         { name: "Buenos Aires", lat: -34.61, lng: -58.38, country: "Argentina" },
         { name: "Santiago", lat: -33.45, lng: -70.66, country: "Chile" },
@@ -237,42 +256,66 @@
         { name: "New York", lat: 40.71, lng: -74.01, country: "USA" }
       ];
 
-      const cityInput = document.getElementById("citySearch");
-
-      cityInput.addEventListener("change", async () => {
+      cityInput.addEventListener("input", () => {
         const query = cityInput.value.trim().toLowerCase();
-        const city = cities.find(c => c.name.toLowerCase() === query);
 
-        if (!city) {
-          alert("City not found");
+        if (!query) {
+          suggestionsDiv.style.display = "none";
           return;
         }
 
-        if (!currentUser) {
-          alert("Login first");
+        const matches = cities
+          .filter(c => c.name.toLowerCase().includes(query))
+          .slice(0, 5);
+
+        suggestionsDiv.innerHTML = "";
+
+        if (matches.length === 0) {
+          suggestionsDiv.style.display = "none";
           return;
         }
 
-        if (!visitedCities.find(c => c.name === city.name)) {
-          visitedCities.push(city);
-        }
+        matches.forEach(city => {
+          const div = document.createElement("div");
+          div.style.padding = "8px";
+          div.style.cursor = "pointer";
+          div.innerText = `${city.name} (${city.country})`;
 
-        if (!visitedCountries.includes(city.country)) {
-          visitedCountries.push(city.country);
-        }
+          div.addEventListener("click", async () => {
+            if (!currentUser) {
+              alert("Login first");
+              return;
+            }
 
-        await setDoc(doc(db, "users", currentUser.uid), {
-          visited: visitedCountries,
-          visitedCities: visitedCities
+            if (!visitedCities.find(c => c.name === city.name)) {
+              visitedCities.push(city);
+            }
+
+            if (!visitedCountries.includes(city.country)) {
+              visitedCountries.push(city.country);
+            }
+
+            await setDoc(doc(db, "users", currentUser.uid), {
+              visited: visitedCountries,
+              visitedCities: visitedCities
+            });
+
+            updateGlobe();
+            updateCities();
+            updateProgress();
+
+            cityInput.value = "";
+            suggestionsDiv.style.display = "none";
+          });
+
+          suggestionsDiv.appendChild(div);
         });
 
-        updateGlobe();
-        updateCities();
-        updateProgress();
-        cityInput.value = "";
+        suggestionsDiv.style.display = "block";
       });
     </script>
   </body>
 </html>
+
 
 
