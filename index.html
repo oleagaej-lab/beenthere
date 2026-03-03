@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <title>BeenThere 🌍</title>
 
-    <!-- Globe library -->
     <script src="https://unpkg.com/globe.gl/dist/globe.gl.min.js"></script>
 
     <style>
@@ -22,7 +21,7 @@
 
       #globeViz {
         width: 100vw;
-        height: 70vh;
+        height: 65vh;
       }
 
       button {
@@ -39,7 +38,17 @@
         color: white;
       }
 
-      /* Barra de progreso */
+      input {
+        padding: 10px;
+        width: 60%;
+        max-width: 400px;
+        margin: 10px auto;
+        display: block;
+        border-radius: 8px;
+        border: none;
+        font-size: 14px;
+      }
+
       #stats {
         width: 60%;
         margin: 10px auto;
@@ -72,7 +81,10 @@
 
     <button id="loginBtn" class="primary">Login with Google</button>
 
-    <!-- Contador y barra de progreso -->
+    <!-- Buscar ciudad -->
+    <input type="text" id="citySearch" placeholder="Search city..." />
+
+    <!-- Barra progreso -->
     <div id="stats">
       <div id="progressText">🌍 0 countries visited (0%)</div>
       <div id="progressBarContainer">
@@ -82,13 +94,11 @@
 
     <div id="globeViz"></div>
 
-    <!-- FIREBASE + LOGICA -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-      // 🔑 REEMPLAZAR CON TUS CLAVES REALES
       const firebaseConfig = {
         apiKey: "AIzaSyAW55OcrQaJy6iwidqi35Rn5JXEnKnEtbs",
     authDomain: "beenthere-35029.firebaseapp.com",
@@ -105,12 +115,12 @@
 
       let currentUser = null;
       let visitedCountries = [];
+      let visitedCities = [];
       let totalCountries = 0;
 
       const loginBtn = document.getElementById("loginBtn");
       const globeContainer = document.getElementById("globeViz");
 
-      // LOGIN
       loginBtn.addEventListener("click", () => {
         signInWithPopup(auth, provider);
       });
@@ -125,20 +135,31 @@
 
           if (docSnap.exists()) {
             visitedCountries = docSnap.data().visited || [];
+            visitedCities = docSnap.data().visitedCities || [];
           }
 
           updateGlobe();
+          updateCities();
           updateProgress();
         }
       });
 
-      // FUNCIONES DE ACTUALIZACIÓN
       function updateGlobe() {
         globe.polygonCapColor(d =>
           visitedCountries.includes(d.properties.name)
             ? "#2563eb"
             : "yellow"
         );
+      }
+
+      function updateCities() {
+        globe
+          .pointsData(visitedCities)
+          .pointLat(d => d.lat)
+          .pointLng(d => d.lng)
+          .pointColor(() => "#f59e0b")
+          .pointAltitude(0.02)
+          .pointRadius(0.5);
       }
 
       function updateProgress() {
@@ -153,7 +174,6 @@
         document.getElementById("progressBar").style.width = percent + "%";
       }
 
-      // GLOBO
       const Globe = window.Globe;
       const globe = Globe()(globeContainer)
         .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
@@ -162,12 +182,14 @@
       fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
         .then(res => res.json())
         .then(countries => {
-          // 🔹 Corrección Malvinas
-countries.features.forEach(f => {
-  if (f.properties.name === "Falkland Islands") {
-    f.properties.name = "Argentina";
-  }
-});
+
+          // 🇦🇷 Malvinas como Argentina
+          countries.features.forEach(f => {
+            if (f.properties.name === "Falkland Islands") {
+              f.properties.name = "Argentina";
+            }
+          });
+
           totalCountries = countries.features.length;
           updateProgress();
 
@@ -195,18 +217,62 @@ countries.features.forEach(f => {
                 visitedCountries.push(countryName);
               }
 
-              await setDoc(doc(db, "users", currentUser.uid), {
-                visited: visitedCountries
+              await setDoc(doc(db, currentUser.uid), {
+                visited: visitedCountries,
+                visitedCities: visitedCities
               });
 
               updateGlobe();
               updateProgress();
             });
         });
+
+      // Dataset simple de ciudades
+      const cities = [
+        { name: "Buenos Aires", lat: -34.61, lng: -58.38, country: "Argentina" },
+        { name: "Santiago", lat: -33.45, lng: -70.66, country: "Chile" },
+        { name: "São Paulo", lat: -23.55, lng: -46.63, country: "Brasil" },
+        { name: "Paris", lat: 48.85, lng: 2.35, country: "France" },
+        { name: "London", lat: 51.50, lng: -0.12, country: "United Kingdom" },
+        { name: "New York", lat: 40.71, lng: -74.01, country: "USA" }
+      ];
+
+      const cityInput = document.getElementById("citySearch");
+
+      cityInput.addEventListener("change", async () => {
+        const query = cityInput.value.trim().toLowerCase();
+        const city = cities.find(c => c.name.toLowerCase() === query);
+
+        if (!city) {
+          alert("City not found");
+          return;
+        }
+
+        if (!currentUser) {
+          alert("Login first");
+          return;
+        }
+
+        if (!visitedCities.find(c => c.name === city.name)) {
+          visitedCities.push(city);
+        }
+
+        if (!visitedCountries.includes(city.country)) {
+          visitedCountries.push(city.country);
+        }
+
+        await setDoc(doc(db, "users", currentUser.uid), {
+          visited: visitedCountries,
+          visitedCities: visitedCities
+        });
+
+        updateGlobe();
+        updateCities();
+        updateProgress();
+        cityInput.value = "";
+      });
     </script>
   </body>
 </html>
-
-
 
 
