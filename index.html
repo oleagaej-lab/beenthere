@@ -1,108 +1,154 @@
-<script type="module">
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>BeenThere 🌍</title>
 
-document.addEventListener("DOMContentLoaded", () => {
+    <!-- Globe library -->
+    <script src="https://unpkg.com/globe.gl/dist/globe.gl.min.js"></script>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0f172a;
+        color: white;
+        text-align: center;
+      }
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAW55OcrQaJy6iwidqi35Rn5JXEnKnEtbs",
+      h1 {
+        margin-top: 20px;
+      }
+
+      #globeViz {
+        width: 100vw;
+        height: 80vh;
+      }
+
+      button {
+        padding: 10px 20px;
+        margin: 10px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .primary {
+        background: #2563eb;
+        color: white;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>BeenThere 🌍</h1>
+
+    <button id="loginBtn" class="primary">
+      Login with Google
+    </button>
+
+    <div id="globeViz"></div>
+
+    <!-- FIREBASE + LOGICA -->
+    <script type="module">
+
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAW55OcrQaJy6iwidqi35Rn5JXEnKnEtbs",
     authDomain: "beenthere-35029.firebaseapp.com",
     projectId: "beenthere-35029",
     storageBucket: "beenthere-35029.firebasestorage.app",
     messagingSenderId: "424430201561",
     appId: "1:424430201561:web:0877f54d297f2e1921acc8"
-};
+      };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const provider = new GoogleAuthProvider();
 
-let currentUser = null;
-let visitedCountries = [];
+      let currentUser = null;
+      let visitedCountries = [];
 
-const loginBtn = document.getElementById("loginBtn");
-const globeContainer = document.getElementById("globeViz");
+      const loginBtn = document.getElementById("loginBtn");
+      const globeContainer = document.getElementById("globeViz");
 
-// LOGIN
-loginBtn.addEventListener("click", () => {
-  signInWithPopup(auth, provider);
-});
+      // LOGIN
+      loginBtn.addEventListener("click", () => {
+        signInWithPopup(auth, provider);
+      });
 
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUser = user;
-    loginBtn.style.display = "none";
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          loginBtn.style.display = "none";
 
-    const docRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(docRef);
+          const docRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-      visitedCountries = docSnap.data().visited || [];
-    }
-
-    updateGlobe();
-  }
-});
-
-// GLOBO
-const Globe = window.Globe;
-const globe = Globe()
-  (globeContainer)
-  .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
-  .backgroundColor("#0f172a");
-
-fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
-  .then(res => res.json())
-  .then(countries => {
-    globe
-      .polygonsData(countries.features)
-      .polygonAltitude(0.01)
-      .polygonCapColor(d =>
-        visitedCountries.includes(d.properties.name)
-          ? "#2563eb"
-          : "yellow"
-      )
-      .onPolygonClick(async (d) => {
-        if (!currentUser) {
-          alert("Login first");
-          return;
-        }
-
-        const countryName = d.properties.name;
-
-        if (!visitedCountries.includes(countryName)) {
-          visitedCountries.push(countryName);
-
-          await setDoc(doc(db, "users", currentUser.uid), {
-            visited: visitedCountries
-          });
+          if (docSnap.exists()) {
+            visitedCountries = docSnap.data().visited || [];
+          }
 
           updateGlobe();
         }
       });
-  });
 
-function updateGlobe() {
-  globe.polygonCapColor(d =>
-    visitedCountries.includes(d.properties.name)
-      ? "#2563eb"
-      : "yellow"
-  );
-}
+      // GLOBO
+      const Globe = window.Globe;
 
-});
+      const globe = Globe()
+        (globeContainer)
+        .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
+        .backgroundColor("#0f172a");
 
-</script>
+      fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
+        .then(res => res.json())
+        .then(countries => {
+          globe
+            .polygonsData(countries.features)
+            .polygonAltitude(0.01)
+            .polygonCapColor(d =>
+              visitedCountries.includes(d.properties.name)
+                ? "#2563eb"
+                : "yellow"
+            )
+            .onPolygonClick(async (d) => {
+              if (!currentUser) {
+                alert("Login first");
+                return;
+              }
+
+              const countryName = d.properties.name;
+
+              if (!visitedCountries.includes(countryName)) {
+                visitedCountries.push(countryName);
+
+                await setDoc(doc(db, "users", currentUser.uid), {
+                  visited: visitedCountries
+                });
+
+                updateGlobe();
+              }
+            });
+        });
+
+      function updateGlobe() {
+        globe.polygonCapColor(d =>
+          visitedCountries.includes(d.properties.name)
+            ? "#2563eb"
+            : "yellow"
+        );
+      }
+
+    </script>
+  </body>
+</html>
 
 
-apiKey: "AIzaSyAW55OcrQaJy6iwidqi35Rn5JXEnKnEtbs",
-    authDomain: "beenthere-35029.firebaseapp.com",
-    projectId: "beenthere-35029",
-    storageBucket: "beenthere-35029.firebasestorage.app",
-    messagingSenderId: "424430201561",
-    appId: "1:424430201561:web:0877f54d297f2e1921acc8"
