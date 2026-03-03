@@ -119,13 +119,13 @@
                 ? "#2563eb"
                 : "yellow"
             )
+            .polygonSideColor(() => "rgba(0,0,0,0.05)")
+.polygonStrokeColor(() => "rgba(255,255,255,0.6)")
             .onPolygonClick(async (d) => {
               if (!currentUser) {
                 alert("Login first");
                 return;
               }
-              .polygonSideColor(() => "rgba(0,0,0,0.05)")
-.polygonStrokeColor(() => "rgba(255,255,255,0.6)")
 
               const countryName = d.properties.name;
 
@@ -158,6 +158,7 @@ updateGlobe();
     </script>
   </body>
 </html>
+
 
 
 
