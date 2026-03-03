@@ -127,15 +127,21 @@
 
               const countryName = d.properties.name;
 
-              if (!visitedCountries.includes(countryName)) {
-                visitedCountries.push(countryName);
+              if (visitedCountries.includes(countryName)) {
+  // Si ya estaba visitado → lo quitamos
+  visitedCountries = visitedCountries.filter(
+    c => c !== countryName
+  );
+} else {
+  // Si no estaba → lo agregamos
+  visitedCountries.push(countryName);
+}
 
-                await setDoc(doc(db, "users", currentUser.uid), {
-                  visited: visitedCountries
-                });
+await setDoc(doc(db, "users", currentUser.uid), {
+  visited: visitedCountries
+});
 
-                updateGlobe();
-              }
+updateGlobe();
             });
         });
 
@@ -150,5 +156,6 @@
     </script>
   </body>
 </html>
+
 
 
