@@ -22,7 +22,7 @@
 
       #globeViz {
         width: 100vw;
-        height: 80vh;
+        height: 70vh;
       }
 
       button {
@@ -39,51 +39,56 @@
         color: white;
       }
 
+      /* Barra de progreso */
       #stats {
-  width: 60%;
-  margin: 10px auto;
-}
+        width: 60%;
+        margin: 10px auto;
+      }
 
-#progressText {
-  margin-bottom: 6px;
-  font-weight: bold;
-}
+      #progressText {
+        margin-bottom: 6px;
+        font-weight: bold;
+      }
 
-#progressBarContainer {
-  width: 100%;
-  height: 20px;
-  background: #1e293b;
-  border-radius: 10px;
-  overflow: hidden;
-}
+      #progressBarContainer {
+        width: 100%;
+        height: 20px;
+        background: #1e293b;
+        border-radius: 10px;
+        overflow: hidden;
+      }
 
-#progressBar {
-  height: 100%;
-  width: 0%;
-  background: #2563eb;
-  transition: width 0.4s ease;
-}
+      #progressBar {
+        height: 100%;
+        width: 0%;
+        background: #2563eb;
+        transition: width 0.4s ease;
+      }
     </style>
   </head>
 
   <body>
     <h1>BeenThere 🌍</h1>
 
-    <button id="loginBtn" class="primary">
-      Login with Google
-    </button>
+    <button id="loginBtn" class="primary">Login with Google</button>
+
+    <!-- Contador y barra de progreso -->
+    <div id="stats">
+      <div id="progressText">🌍 0 countries visited (0%)</div>
+      <div id="progressBarContainer">
+        <div id="progressBar"></div>
+      </div>
+    </div>
 
     <div id="globeViz"></div>
 
     <!-- FIREBASE + LOGICA -->
     <script type="module">
-
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-      import { getFirestore, doc, setDoc, getDoc }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+      // 🔑 REEMPLAZAR CON TUS CLAVES REALES
       const firebaseConfig = {
         apiKey: "AIzaSyAW55OcrQaJy6iwidqi35Rn5JXEnKnEtbs",
     authDomain: "beenthere-35029.firebaseapp.com",
@@ -127,19 +132,30 @@
         }
       });
 
-<div id="stats">
-  <div id="progressText">🌍 0 countries visited (0%)</div>
-  <div id="progressBarContainer">
-    <div id="progressBar"></div>
-  </div>
-</div>
+      // FUNCIONES DE ACTUALIZACIÓN
+      function updateGlobe() {
+        globe.polygonCapColor(d =>
+          visitedCountries.includes(d.properties.name)
+            ? "#2563eb"
+            : "yellow"
+        );
+      }
 
-      
+      function updateProgress() {
+        const count = visitedCountries.length;
+        const percent = totalCountries
+          ? Math.round((count / totalCountries) * 100)
+          : 0;
+
+        document.getElementById("progressText").innerText =
+          `🌍 ${count} countries visited (${percent}%)`;
+
+        document.getElementById("progressBar").style.width = percent + "%";
+      }
+
       // GLOBO
       const Globe = window.Globe;
-
-      const globe = Globe()
-        (globeContainer)
+      const globe = Globe()(globeContainer)
         .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
         .backgroundColor("#0f172a");
 
@@ -147,17 +163,18 @@
         .then(res => res.json())
         .then(countries => {
           totalCountries = countries.features.length;
-updateProgress();
+          updateProgress();
+
           globe
             .polygonsData(countries.features)
             .polygonAltitude(0.01)
+            .polygonSideColor(() => "rgba(0,0,0,0.05)")
+            .polygonStrokeColor(() => "rgba(255,255,255,0.6)")
             .polygonCapColor(d =>
               visitedCountries.includes(d.properties.name)
                 ? "#2563eb"
                 : "yellow"
             )
-            .polygonSideColor(() => "rgba(0,0,0,0.05)")
-.polygonStrokeColor(() => "rgba(255,255,255,0.6)")
             .onPolygonClick(async (d) => {
               if (!currentUser) {
                 alert("Login first");
@@ -167,49 +184,22 @@ updateProgress();
               const countryName = d.properties.name;
 
               if (visitedCountries.includes(countryName)) {
-  // Si ya estaba visitado → lo quitamos
-  visitedCountries = visitedCountries.filter(
-    c => c !== countryName
-  );
-} else {
-  // Si no estaba → lo agregamos
-  visitedCountries.push(countryName);
-}
+                visitedCountries = visitedCountries.filter(c => c !== countryName);
+              } else {
+                visitedCountries.push(countryName);
+              }
 
-await setDoc(doc(db, "users", currentUser.uid), {
-  visited: visitedCountries
-});
+              await setDoc(doc(db, "users", currentUser.uid), {
+                visited: visitedCountries
+              });
 
-updateGlobe();
-              function updateProgress() {
-  const count = visitedCountries.length;
-  const percent = totalCountries
-    ? Math.round((count / totalCountries) * 100)
-    : 0;
-
-  document.getElementById("progressText").innerText =
-    `🌍 ${count} countries visited (${percent}%)`;
-
-  document.getElementById("progressBar").style.width =
-    percent + "%";
-}
+              updateGlobe();
+              updateProgress();
             });
         });
-
-      function updateGlobe() {
-        globe.polygonCapColor(d =>
-          visitedCountries.includes(d.properties.name)
-            ? "#2563eb"
-            : "yellow"
-        );
-      }
-
     </script>
   </body>
 </html>
-
-
-
 
 
 
