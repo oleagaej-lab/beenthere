@@ -162,6 +162,12 @@
       fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
         .then(res => res.json())
         .then(countries => {
+          // 🔹 Corrección Malvinas
+countries.features.forEach(f => {
+  if (f.properties.name === "Falkland Islands") {
+    f.properties.name = "Argentina";
+  }
+});
           totalCountries = countries.features.length;
           updateProgress();
 
@@ -200,6 +206,7 @@
     </script>
   </body>
 </html>
+
 
 
 
